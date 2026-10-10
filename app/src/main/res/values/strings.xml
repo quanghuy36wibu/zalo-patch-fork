@@ -113,6 +113,8 @@
     <string name="zp_image_overlay_pick_title">Choose image</string>
     <string name="zp_image_overlay_selected">Image selected ✓</string>
     <string name="zp_image_overlay_none">No image selected</string>
+    <string name="zp_image_overlay_opacity_title">Image transparency</string>
+    <string name="zp_image_overlay_opacity_summary">Adjust how transparent the banner looks.</string>
     <string name="zp_tweak_hide_zcloud_banner">Hide zCloud banner</string>
     <string name="zp_tweak_hide_zcloud_banner_summary">Removes the zCloud banner above the inbox.</string>
     <string name="zp_tweak_inbox_chip_bar">Inbox chip bar</string>
