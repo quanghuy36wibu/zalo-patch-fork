@@ -3,6 +3,9 @@ package com.ez.zalopatch;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Spannable;
@@ -15,6 +18,9 @@ import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
 import androidx.core.content.ContextCompat;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +44,8 @@ public final class SectionActivity {
         private ZpRowPreference developerRootAccess;
         private ZpRowPreference developerRuntimeEnvironment;
         private ZpRowPreference recordingsRow;
+        private ZpRowPreference imageOverlayPickerRow;
+        private ZpRowPreference imageOverlayRemoveRow;
         private ZpMainSwitchPreference telemetryMaster;
         private boolean recordingCountLoading;
         private boolean resourceRequirementMet;
@@ -56,6 +64,14 @@ public final class SectionActivity {
                             if (preference != null) {
                                 preference.setChecked(true);
                             }
+                        });
+
+        private final ActivityResultLauncher<String> imagePickerLauncher =
+                registerForActivityResult(
+                        new ActivityResultContracts.GetContent(), uri -> {
+                            if (uri == null) return;
+                            saveImageOverlay(uri);
+                            refreshImagePickerRow();
                         });
 
         static SettingsFragment forSection(String section) {
@@ -123,6 +139,7 @@ public final class SectionActivity {
             developerRootAccess = null;
             developerRuntimeEnvironment = null;
             recordingsRow = null;
+            imageOverlayPickerRow = null;
             telemetryMaster = null;
             resourceRequirementMet = RequirementGate.isMet(
                     context, Tweaks.Requirement.RESOURCE_HOOKS);
@@ -365,6 +382,17 @@ public final class SectionActivity {
                 section.add(recordingsRow);
                 refreshRecordingCount();
             }
+            if (Tweaks.KEY_INBOX_IMAGE_OVERLAY.equals(key)) {
+                imageOverlayPickerRow = PreferenceUi.nav(context,
+                        getString(R.string.zp_image_overlay_pick_title));
+                imageOverlayPickerRow.setIcon(R.drawable.ic_zp_upload);
+                refreshImagePickerRow();
+                imageOverlayPickerRow.setOnPreferenceClickListener(preference -> {
+                    imagePickerLauncher.launch("image/*");
+                    return true;
+                });
+                section.addDependent(imageOverlayPickerRow, Tweaks.KEY_INBOX_IMAGE_OVERLAY);
+            }
         }
 
         private Preference defaultInboxFilterPreference(Context context) {
@@ -444,6 +472,57 @@ public final class SectionActivity {
                     recordingsRow.refreshStyle();
                 });
             }, "call-recording-count").start();
+        }
+
+        /** Cập nhật hiển thị tên file ảnh đã chọn trên row chọn ảnh. */
+        private void refreshImagePickerRow() {
+            if (imageOverlayPickerRow == null || !isAdded()) return;
+            File imageFile = overlayImageFile(requireContext());
+            if (imageFile != null && imageFile.exists()) {
+                imageOverlayPickerRow.value(getString(R.string.zp_image_overlay_selected));
+            } else {
+                imageOverlayPickerRow.value(getString(R.string.zp_image_overlay_none));
+            }
+            imageOverlayPickerRow.refreshStyle();
+        }
+
+        /**
+         * Sao chép ảnh từ URI người dùng chọn vào thư mục nội bộ của module.
+         * Zalo process đọc ảnh từ đây thông qua module context trong hook.
+         */
+        private void saveImageOverlay(Uri uri) {
+            Context context = requireContext().getApplicationContext();
+            new Thread(() -> {
+                File dest = overlayImageFile(context);
+                if (dest == null) return;
+                try (InputStream in = context.getContentResolver().openInputStream(uri)) {
+                    if (in == null) return;
+                    // Giải mã và lưu lại để đảm bảo file là JPEG hợp lệ
+                    Bitmap bitmap = BitmapFactory.decodeStream(in);
+                    if (bitmap == null) return;
+                    // Tạo thư mục nếu chưa có
+                    File parent = dest.getParentFile();
+                    if (parent != null && !parent.exists()) {
+                        parent.mkdirs();
+                    }
+                    try (FileOutputStream out = new FileOutputStream(dest)) {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+                    }
+                    bitmap.recycle();
+                } catch (Throwable ignored) {
+                }
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(
+                        this::refreshImagePickerRow);
+            }, "image-overlay-save").start();
+        }
+
+        /** Trả về File đích lưu ảnh overlay, hoặc null nếu không tạo được thư mục. */
+        private static File overlayImageFile(Context context) {
+            File dir = context.getFilesDir();
+            if (dir == null) return null;
+            return new File(dir,
+                    com.ez.zalopatch.xposed.features.InboxImageOverlayFeature
+                            .OVERLAY_IMAGE_FILENAME);
         }
 
         private Preference telemetryMasterPreference(Context context) {

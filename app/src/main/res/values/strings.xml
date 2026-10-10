@@ -108,6 +108,11 @@
     <string name="zp_tweak_disable_measurement_bind_summary">Push notifications stay on.</string>
     <string name="zp_tweak_hide_media_box">Hide Media Box</string>
     <string name="zp_tweak_hide_media_box_summary">Removes Media Box from the inbox list.</string>
+    <string name="zp_tweak_inbox_image_overlay">Inbox image banner</string>
+    <string name="zp_tweak_inbox_image_overlay_summary">Shows a custom image banner at the top of the conversation list.</string>
+    <string name="zp_image_overlay_pick_title">Choose image</string>
+    <string name="zp_image_overlay_selected">Image selected ✓</string>
+    <string name="zp_image_overlay_none">No image selected</string>
     <string name="zp_tweak_hide_zcloud_banner">Hide zCloud banner</string>
     <string name="zp_tweak_hide_zcloud_banner_summary">Removes the zCloud banner above the inbox.</string>
     <string name="zp_tweak_inbox_chip_bar">Inbox chip bar</string>

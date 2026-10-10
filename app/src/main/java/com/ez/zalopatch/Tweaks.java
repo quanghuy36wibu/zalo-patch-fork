@@ -49,6 +49,8 @@ public final class Tweaks {
 
     public static final String KEY_HIDE_MEDIA_BOX = "inbox.hide_media_box";
     public static final String KEY_HIDE_ZCLOUD_BANNER = "inbox.hide_zcloud_banner";
+    public static final String KEY_INBOX_IMAGE_OVERLAY = "inbox.image_overlay";
+    public static final String KEY_INBOX_IMAGE_HEIGHT = "inbox.image_height";
     public static final String KEY_FILTER_POPOVER_CATEGORIES = "inbox.filter_popover";
     public static final String KEY_HIDE_REACTION_ROW = "messages.hide_reaction_row";
     public static final String KEY_OPEN_LINKS_EXTERNALLY = "messages.open_links_externally";
@@ -119,7 +121,8 @@ public final class Tweaks {
         if (SECTION_INBOX.equals(section)) {
             return Arrays.asList(
                     new Group(R.string.zp_group_inbox_sections, KEY_HIDE_MEDIA_BOX,
-                            KEY_HIDE_ZCLOUD_BANNER),
+                            KEY_HIDE_ZCLOUD_BANNER, KEY_INBOX_IMAGE_OVERLAY,
+                            KEY_INBOX_IMAGE_HEIGHT),
                     new Group(R.string.zp_group_category_controls, KEY_FILTER_POPOVER_CATEGORIES,
                             KEY_DEFAULT_INBOX_FILTER, KEY_CATEGORY_GROUPS,
                             KEY_CATEGORY_STRANGERS, KEY_CATEGORY_OA));
@@ -255,6 +258,10 @@ public final class Tweaks {
 
             new Item(SECTION_INBOX, KEY_HIDE_MEDIA_BOX,
                     R.string.zp_tweak_hide_media_box, R.string.zp_tweak_hide_media_box_summary,
+                    true, false),
+            new Item(SECTION_INBOX, KEY_INBOX_IMAGE_OVERLAY,
+                    R.string.zp_tweak_inbox_image_overlay,
+                    R.string.zp_tweak_inbox_image_overlay_summary,
                     true, false),
             new Item(SECTION_INBOX, KEY_HIDE_ZCLOUD_BANNER,
                     R.string.zp_tweak_hide_zcloud_banner, R.string.zp_tweak_hide_zcloud_banner_summary,

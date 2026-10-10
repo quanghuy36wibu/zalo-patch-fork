@@ -73,6 +73,11 @@
     <string name="zp_tweak_hide_zbusiness_summary">Chỉ áp dụng khi Zalo hiển thị mục này.</string>
     <string name="zp_tweak_hide_media_box">Ẩn Media Box</string>
     <string name="zp_tweak_hide_media_box_summary">Ẩn Media Box khỏi trang Tin nhắn.</string>
+    <string name="zp_tweak_inbox_image_overlay">Banner ảnh Tin nhắn</string>
+    <string name="zp_tweak_inbox_image_overlay_summary">Hiển thị ảnh tuỳ chọn ở đầu danh sách hội thoại.</string>
+    <string name="zp_image_overlay_pick_title">Chọn ảnh</string>
+    <string name="zp_image_overlay_selected">Đã chọn ảnh ✓</string>
+    <string name="zp_image_overlay_none">Chưa chọn ảnh</string>
     <string name="zp_tweak_hide_zcloud_banner">Ẩn banner zCloud</string>
     <string name="zp_tweak_hide_zcloud_banner_summary">Ẩn banner zCloud phía trên Tin nhắn.</string>
     <string name="zp_tweak_hide_reaction_row">Ẩn thanh Bày tỏ cảm xúc</string>

@@ -15,6 +15,7 @@ import com.ez.zalopatch.xposed.features.CallRecordingProbeFeature;
 import com.ez.zalopatch.xposed.features.CallRecordingFeature;
 import com.ez.zalopatch.xposed.features.ChatFeature;
 import com.ez.zalopatch.xposed.features.InboxFeature;
+import com.ez.zalopatch.xposed.features.InboxImageOverlayFeature;
 import com.ez.zalopatch.xposed.features.InteractionTraceFeature;
 import com.ez.zalopatch.xposed.features.MeCleanupFeature;
 import com.ez.zalopatch.xposed.features.MediaFeature;
@@ -168,6 +169,7 @@ public final class MainFeatures {
             features.add(new ChatFeature(classLoader, preflight.chatReaction,
                     preflight.reason(preflight.chatReactionErrors)));
             features.add(new ZcloudBannerFeature(classLoader));
+            features.add(new InboxImageOverlayFeature(classLoader));
             addPasscodeGrace(features, classLoader, preflight);
             addStatusPrivacy(features, classLoader, preflight);
             addWebLinkExternalize(features, classLoader, preflight);
