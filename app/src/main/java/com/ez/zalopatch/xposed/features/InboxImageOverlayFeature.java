@@ -94,20 +94,13 @@ public final class InboxImageOverlayFeature extends Feature {
                 }
 
                 View root = (View) param.getResult();
-                ensureIds(root);
-
-                if (messagesListId == 0
-                        || ((Integer) param.args[0]).intValue() != messagesListId) {
-                    return;
-                }
-
-                // Tránh thêm banner hai lần vào cùng view instance.
-                if (root.getTag(VIEW_TAG_KEY) != null) return;
-                root.setTag(VIEW_TAG_KEY, Boolean.TRUE);
-
                 if (!(root instanceof ViewGroup)) return;
+                if (!isMessagesListInflate(root, (Integer) param.args[0])) return;
 
-                Bitmap bitmap = getOverlayBitmap();
+                // Chỉ đánh dấu sau khi đã xác nhận ảnh hợp lệ; nếu ảnh được chọn sau đó,
+                // lần inflate tiếp theo vẫn có thể chèn banner.
+                if (root.getTag(VIEW_TAG_KEY) != null) return;
+                Bitmap bitmap = getOverlayBitmap(root.getContext());
                 if (bitmap == null) return;
 
                 Context context = root.getContext();
@@ -118,6 +111,9 @@ public final class InboxImageOverlayFeature extends Feature {
 
                 ImageView imageView = new ImageView(context);
                 imageView.setImageBitmap(bitmap);
+                int opacity = HookConfig.getLevel(Tweaks.KEY_INBOX_IMAGE_OPACITY);
+                if (opacity <= 0 || opacity > 100) opacity = 100;
+                imageView.setAlpha(opacity / 100f);
                 imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 imageView.setAdjustViewBounds(false);
                 imageView.setClickable(true);
@@ -145,6 +141,7 @@ public final class InboxImageOverlayFeature extends Feature {
                 ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, heightPx);
                 ((ViewGroup) root).addView(imageView, 0, lp);
+                root.setTag(VIEW_TAG_KEY, Boolean.TRUE);
 
                 SelfCheckRegistry.incrementHit(FEATURE,
                         "LayoutInflater#inflate(messageslist)",
@@ -171,6 +168,25 @@ public final class InboxImageOverlayFeature extends Feature {
 
     // ──────────────────────── helpers ────────────────────────
 
+    /**
+     * Nhận diện layout bằng resource id hoặc tên resource thực tế. Một số bản Zalo
+     * inflate layout bằng id khác package hoặc resource id không tra được qua getIdentifier.
+     */
+    private static boolean isMessagesListInflate(View root, int layoutId) {
+        ensureIds(root);
+        if (messagesListId != 0 && layoutId == messagesListId) return true;
+        try {
+            String entry = root.getResources().getResourceEntryName(layoutId);
+            String normalized = entry == null ? "" : entry.toLowerCase(java.util.Locale.ROOT);
+            return MESSAGES_LIST_LAYOUT.equals(normalized)
+                    || "message_list".equals(normalized)
+                    || "fragment_messages_list".equals(normalized)
+                    || "messages_list".equals(normalized);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /** Resolve và cache id layout {@code messageslist}. Thử lại nếu chưa tìm được. */
     private static void ensureIds(View root) {
         if (idsResolved) return;
@@ -189,10 +205,19 @@ public final class InboxImageOverlayFeature extends Feature {
      * Trả về {@link Bitmap} đã cache; tải lại nếu file thay đổi.
      * Cache được chia sẻ giữa các lần inflate trong cùng process.
      */
-    private static Bitmap getOverlayBitmap() {
+    private static Bitmap getOverlayBitmap(Context hostContext) {
         try {
             Context moduleCtx = HookConfig.resolveModuleContextForHooks();
-            if (moduleCtx == null) return null;
+            // resolveModuleContextForHooks có thể trả về context của Zalo khi module context
+            // không truy cập được. Không được đọc filesDir của Zalo vì ảnh được lưu trong module.
+            if (moduleCtx == null || !"com.ez.zalopatch".equals(moduleCtx.getPackageName())) {
+                try {
+                    moduleCtx = hostContext.createPackageContext(
+                            "com.ez.zalopatch", Context.CONTEXT_IGNORE_SECURITY);
+                } catch (Throwable ignored) {
+                    return null;
+                }
+            }
             File imageFile = new File(moduleCtx.getFilesDir(), OVERLAY_IMAGE_FILENAME);
             if (!imageFile.exists() || imageFile.length() == 0) {
                 cachedBitmap = null;
