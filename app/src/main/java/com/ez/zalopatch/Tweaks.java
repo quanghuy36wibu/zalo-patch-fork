@@ -51,6 +51,7 @@ public final class Tweaks {
     public static final String KEY_HIDE_ZCLOUD_BANNER = "inbox.hide_zcloud_banner";
     public static final String KEY_INBOX_IMAGE_OVERLAY = "inbox.image_overlay";
     public static final String KEY_INBOX_IMAGE_HEIGHT = "inbox.image_height";
+    public static final String KEY_INBOX_IMAGE_OPACITY = "inbox.image_opacity";
     public static final String KEY_FILTER_POPOVER_CATEGORIES = "inbox.filter_popover";
     public static final String KEY_HIDE_REACTION_ROW = "messages.hide_reaction_row";
     public static final String KEY_OPEN_LINKS_EXTERNALLY = "messages.open_links_externally";

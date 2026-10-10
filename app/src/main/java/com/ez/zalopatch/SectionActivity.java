@@ -392,6 +392,25 @@ public final class SectionActivity {
                     return true;
                 });
                 section.addDependent(imageOverlayPickerRow, Tweaks.KEY_INBOX_IMAGE_OVERLAY);
+
+                ZpListPreference opacityPreference = new ZpListPreference(context);
+                opacityPreference.setKey(Tweaks.KEY_INBOX_IMAGE_OPACITY);
+                opacityPreference.setTitle(R.string.zp_image_overlay_opacity_title);
+                opacityPreference.setSummary(R.string.zp_image_overlay_opacity_summary);
+                opacityPreference.setEntries(R.array.zp_image_opacity_entries);
+                opacityPreference.setEntryValues(R.array.zp_image_opacity_values);
+                opacityPreference.setValue(String.valueOf(
+                        SettingsStore.getInt(context, Tweaks.KEY_INBOX_IMAGE_OPACITY)));
+                opacityPreference.setOnPreferenceChangeListener((changedPreference, newValue) -> {
+                    int value;
+                    try { value = Integer.parseInt(String.valueOf(newValue)); }
+                    catch (NumberFormatException ignored) { return false; }
+                    if (value != 25 && value != 50 && value != 75 && value != 100) return false;
+                    SettingsStore.putInt(context, Tweaks.KEY_INBOX_IMAGE_OPACITY, value);
+                    SettingsChanges.markChanged(context, Tweaks.KEY_INBOX_IMAGE_OPACITY);
+                    return true;
+                });
+                section.addDependent(opacityPreference, Tweaks.KEY_INBOX_IMAGE_OVERLAY);
             }
         }
 

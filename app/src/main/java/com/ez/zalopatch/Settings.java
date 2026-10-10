@@ -50,6 +50,8 @@ public final class Settings {
         settings.add(intSetting(Tweaks.KEY_INBOX_IMAGE_HEIGHT, Tweaks.SECTION_INBOX,
                 120,
                 java.util.Arrays.asList(80, 120, 180, 240), true, true));
+        settings.add(intSetting(Tweaks.KEY_INBOX_IMAGE_OPACITY, Tweaks.SECTION_INBOX,
+                100, java.util.Arrays.asList(25, 50, 75, 100), true, true));
         settings.add(intSetting(Tweaks.KEY_BACKUP_PUSH_INTERVAL, Tweaks.SECTION_BACKUP,
                 6, java.util.Arrays.asList(1, 3, 6, 12), true, true));
         settings.add(intSetting(Tweaks.KEY_PASSCODE_GRACE_MS, Tweaks.SECTION_SECURITY,
