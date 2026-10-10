@@ -125,6 +125,8 @@ public final class SettingsModelTest {
             expected.add(item.key);
         }
         assertTrue(rendered.remove(Tweaks.KEY_DEFAULT_INBOX_FILTER));
+        // Image height is a numeric control, not a user-facing toggle.
+        assertTrue(rendered.remove(Tweaks.KEY_INBOX_IMAGE_HEIGHT));
         assertTrue(rendered.remove(Tweaks.KEY_BACKUP_PUSH_INTERVAL));
         assertTrue(rendered.remove(Tweaks.KEY_PASSCODE_GRACE_MS));
         assertEquals(expected, rendered);
