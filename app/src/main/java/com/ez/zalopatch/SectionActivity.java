@@ -528,14 +528,33 @@ public final class SectionActivity {
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
                     }
                     bitmap.recycle();
-                    // Cho phép Zalo process (hooked bởi Xposed) đọc file này
-                    dest.setReadable(true, false);
-                    dest.getParentFile().setExecutable(true, false);
+                    // Dùng root copy ảnh vào thư mục Zalo để hook đọc trực tiếp
+                    // (pattern từ TikGoon: lưu file trong host app's files dir)
+                    copyToZaloDir(dest);
                 } catch (Throwable ignored) {
                 }
                 new android.os.Handler(android.os.Looper.getMainLooper()).post(
                         this::refreshImagePickerRow);
             }, "image-overlay-save").start();
+        }
+
+        /**
+         * Copy file ảnh vào thư mục của Zalo bằng root.
+         * Hook chạy trong process Zalo sẽ đọc từ đây — không cần cross-app file access.
+         */
+        private static void copyToZaloDir(File src) {
+            String zaloFile = "/data/user/0/com.zing.zalo/files/"
+                    + com.ez.zalopatch.xposed.features.InboxImageOverlayFeature
+                            .OVERLAY_IMAGE_FILENAME;
+            try {
+                String cmd = "mkdir -p /data/user/0/com.zing.zalo/files"
+                        + " && cp " + src.getAbsolutePath() + " " + zaloFile
+                        + " && chmod 600 " + zaloFile
+                        + " && chown $(stat -c %u /data/user/0/com.zing.zalo) " + zaloFile;
+                Process p = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
+                p.waitFor();
+            } catch (Throwable ignored) {
+            }
         }
 
         /** Trả về File đích lưu ảnh overlay, hoặc null nếu không tạo được thư mục. */
