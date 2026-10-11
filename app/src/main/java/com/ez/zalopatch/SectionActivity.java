@@ -528,6 +528,9 @@ public final class SectionActivity {
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
                     }
                     bitmap.recycle();
+                    // Cho phép Zalo process (hooked bởi Xposed) đọc file này
+                    dest.setReadable(true, false);
+                    dest.getParentFile().setExecutable(true, false);
                 } catch (Throwable ignored) {
                 }
                 new android.os.Handler(android.os.Looper.getMainLooper()).post(
