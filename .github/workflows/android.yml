@@ -26,21 +26,31 @@ jobs:
         with:
           packages: platform-tools
 
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_B64 }}" > tikgoon.b64
+          base64 -d tikgoon.b64 > tikgoon.jks
+          echo "SIGNING_KEYSTORE_FILE=${{ github.workspace }}/tikgoon.jks" >> $GITHUB_ENV
+
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
       - name: Test and assemble
+        env:
+          SIGNING_KEYSTORE_FILE: ${{ env.SIGNING_KEYSTORE_FILE }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: tikgoon
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: >-
           ./gradlew
           :app:testDebugUnitTest
           :app:lintDebug
-          :app:assembleDebug
-          :app:assembleDebugAndroidTest
+          :app:assembleRelease
           --console=plain
 
-      - name: Upload debug APK
+      - name: Upload signed APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: zalo-patch-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: zalo-patch-signed-apk
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
