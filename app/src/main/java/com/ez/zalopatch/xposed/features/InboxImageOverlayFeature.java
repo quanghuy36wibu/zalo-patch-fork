@@ -20,51 +20,22 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Chèn hình ảnh tuỳ chọn vào đầu danh sách hội thoại chính (giao diện Tin nhắn).
- *
- * <p>Hook vào {@link LayoutInflater#inflate} tương tự {@link ZcloudBannerFeature}.
- * Khi layout {@code messageslist} được inflate, một {@link ImageView} được thêm vào
- * vị trí đầu tiên của ViewGroup gốc và tải ảnh từ file đã lưu trong thư mục của module.
- *
- * <p>Ảnh lưu tại {@code <module_files_dir>/inbox_overlay.jpg}. Chiều cao banner đọc từ
- * preference {@link Tweaks#KEY_INBOX_IMAGE_HEIGHT} (đơn vị dp).
- * Nhấn vào banner để thu gọn/mở rộng trong phiên làm việc.
- */
 public final class InboxImageOverlayFeature extends Feature {
 
-    /** Key cho SelfCheckRegistry. */
     private static final String FEATURE = Tweaks.KEY_INBOX_IMAGE_OVERLAY;
-
-    /** Package Zalo để tra cứu resource id. */
     private static final String TARGET_PACKAGE = "com.zing.zalo";
-
-    /** Tên layout chứa danh sách hội thoại chính. */
     private static final String MESSAGES_LIST_LAYOUT = "messageslist";
-
-    /** Tên file ảnh lưu trong thư mục module. */
     public static final String OVERLAY_IMAGE_FILENAME = "inbox_overlay.jpg";
+    private static final String MODULE_PACKAGE = "com.ez.zalopatch";
 
-    /** Chiều cao banner mặc định (dp) — dùng khi preference chưa lưu. */
     private static final int DEFAULT_BANNER_HEIGHT_DP = 120;
-
-    /** Thời gian animation thu gọn/mở rộng (ms). */
     private static final int COLLAPSE_DURATION_MS = 250;
-
-    /**
-     * Tag view để tránh thêm banner nhiều lần vào cùng một instance.
-     * Dùng số nguyên cố định thay cho R.id để tránh phụ thuộc tài nguyên host.
-     */
-    private static final int VIEW_TAG_KEY = 0x7a700001; // 'zp' + 0x0001
+    private static final int VIEW_TAG_KEY = 0x7a700001;
 
     private static final AtomicBoolean OBSERVED = new AtomicBoolean(false);
-
-    // Resource id — resolve một lần, cache mãi.
     private static final Object IDS_LOCK = new Object();
     private static volatile boolean idsResolved;
     private static volatile int messagesListId;
-
-    // Bitmap cache — giữ trong bộ nhớ để không decode lại mỗi lần inflate.
     private static volatile Bitmap cachedBitmap;
     private static volatile long cachedBitmapModified = -1;
 
@@ -83,23 +54,18 @@ public final class InboxImageOverlayFeature extends Feature {
             @Override
             public void after(XpHooks.HookParam param) {
                 OBSERVED.set(true);
-
                 if (!HookConfig.isEnabled(FEATURE)) return;
 
                 if (!(param.getResult() instanceof View)
                         || param.args == null
                         || param.args.length == 0
-                        || !(param.args[0] instanceof Integer)) {
-                    return;
-                }
+                        || !(param.args[0] instanceof Integer)) return;
 
                 View root = (View) param.getResult();
                 if (!(root instanceof ViewGroup)) return;
                 if (!isMessagesListInflate(root, (Integer) param.args[0])) return;
-
-                // Chỉ đánh dấu sau khi đã xác nhận ảnh hợp lệ; nếu ảnh được chọn sau đó,
-                // lần inflate tiếp theo vẫn có thể chèn banner.
                 if (root.getTag(VIEW_TAG_KEY) != null) return;
+
                 Bitmap bitmap = getOverlayBitmap(root.getContext());
                 if (bitmap == null) return;
 
@@ -111,19 +77,15 @@ public final class InboxImageOverlayFeature extends Feature {
 
                 ImageView imageView = new ImageView(context);
                 imageView.setImageBitmap(bitmap);
-                int opacity = HookConfig.getLevel(Tweaks.KEY_INBOX_IMAGE_OPACITY);
-                if (opacity <= 0 || opacity > 100) opacity = 100;
-                imageView.setAlpha(opacity / 100f);
                 imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 imageView.setAdjustViewBounds(false);
                 imageView.setClickable(true);
                 imageView.setFocusable(true);
 
-                // Nhấn vào banner: thu gọn → mở rộng xen kẽ.
                 final boolean[] collapsed = {false};
                 imageView.setOnClickListener(v -> {
                     int targetH = collapsed[0] ? heightPx : 0;
-                    int startH = collapsed[0] ? 0 : heightPx;
+                    int startH  = collapsed[0] ? 0 : heightPx;
                     collapsed[0] = !collapsed[0];
                     ValueAnimator anim = ValueAnimator.ofInt(startH, targetH);
                     anim.setDuration(COLLAPSE_DURATION_MS);
@@ -154,8 +116,7 @@ public final class InboxImageOverlayFeature extends Feature {
 
         if (installed.isEmpty()) {
             SelfCheckRegistry.markStale(FEATURE,
-                    "LayoutInflater#inflate(messageslist)",
-                    "no inflate overloads found");
+                    "LayoutInflater#inflate(messageslist)", "no inflate overloads found");
             return;
         }
         if (!HookConfig.isEnabled(FEATURE)) {
@@ -166,28 +127,22 @@ public final class InboxImageOverlayFeature extends Feature {
                 "LayoutInflater#inflate(messageslist)", installed.size());
     }
 
-    // ──────────────────────── helpers ────────────────────────
-
-    /**
-     * Nhận diện layout bằng resource id hoặc tên resource thực tế. Một số bản Zalo
-     * inflate layout bằng id khác package hoặc resource id không tra được qua getIdentifier.
-     */
     private static boolean isMessagesListInflate(View root, int layoutId) {
         ensureIds(root);
         if (messagesListId != 0 && layoutId == messagesListId) return true;
         try {
             String entry = root.getResources().getResourceEntryName(layoutId);
-            String normalized = entry == null ? "" : entry.toLowerCase(java.util.Locale.ROOT);
-            return MESSAGES_LIST_LAYOUT.equals(normalized)
-                    || "message_list".equals(normalized)
-                    || "fragment_messages_list".equals(normalized)
-                    || "messages_list".equals(normalized);
+            if (entry == null) return false;
+            String n = entry.toLowerCase(java.util.Locale.ROOT);
+            return n.equals(MESSAGES_LIST_LAYOUT)
+                    || n.equals("message_list")
+                    || n.equals("messages_list")
+                    || n.equals("fragment_messages_list");
         } catch (Throwable ignored) {
             return false;
         }
     }
 
-    /** Resolve và cache id layout {@code messageslist}. Thử lại nếu chưa tìm được. */
     private static void ensureIds(View root) {
         if (idsResolved) return;
         synchronized (IDS_LOCK) {
@@ -201,25 +156,10 @@ public final class InboxImageOverlayFeature extends Feature {
         }
     }
 
-    /**
-     * Trả về {@link Bitmap} đã cache; tải lại nếu file thay đổi.
-     * Cache được chia sẻ giữa các lần inflate trong cùng process.
-     */
     private static Bitmap getOverlayBitmap(Context hostContext) {
         try {
-            Context moduleCtx = HookConfig.resolveModuleContextForHooks();
-            // resolveModuleContextForHooks có thể trả về context của Zalo khi module context
-            // không truy cập được. Không được đọc filesDir của Zalo vì ảnh được lưu trong module.
-            if (moduleCtx == null || !"com.ez.zalopatch".equals(moduleCtx.getPackageName())) {
-                try {
-                    moduleCtx = hostContext.createPackageContext(
-                            "com.ez.zalopatch", Context.CONTEXT_IGNORE_SECURITY);
-                } catch (Throwable ignored) {
-                    return null;
-                }
-            }
-            File imageFile = new File(moduleCtx.getFilesDir(), OVERLAY_IMAGE_FILENAME);
-            if (!imageFile.exists() || imageFile.length() == 0) {
+            File imageFile = resolveImageFile(hostContext);
+            if (imageFile == null || !imageFile.exists() || imageFile.length() == 0) {
                 cachedBitmap = null;
                 cachedBitmapModified = -1;
                 return null;
@@ -239,5 +179,40 @@ public final class InboxImageOverlayFeature extends Feature {
         } catch (Throwable t) {
             return null;
         }
+    }
+
+    /**
+     * Thử các đường dẫn theo thứ tự ưu tiên:
+     * 1. Đường dẫn tuyệt đối cố định (nhanh, không cần context)
+     * 2. Module context qua resolveModuleContextForHooks
+     * 3. createPackageContext từ host context
+     */
+    private static File resolveImageFile(Context hostContext) {
+        // 1. Đường dẫn tuyệt đối — hoạt động khi file được set world-readable
+        File direct = new File(
+                "/data/data/" + MODULE_PACKAGE + "/files/" + OVERLAY_IMAGE_FILENAME);
+        if (direct.exists() && direct.canRead()) return direct;
+
+        // 2. Module context qua Xposed
+        try {
+            Context moduleCtx = HookConfig.resolveModuleContextForHooks();
+            if (moduleCtx != null
+                    && MODULE_PACKAGE.equals(moduleCtx.getPackageName())) {
+                File f = new File(moduleCtx.getFilesDir(), OVERLAY_IMAGE_FILENAME);
+                if (f.exists()) return f;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        // 3. createPackageContext từ host
+        try {
+            Context moduleCtx = hostContext.createPackageContext(
+                    MODULE_PACKAGE, Context.CONTEXT_IGNORE_SECURITY);
+            File f = new File(moduleCtx.getFilesDir(), OVERLAY_IMAGE_FILENAME);
+            if (f.exists()) return f;
+        } catch (Throwable ignored) {
+        }
+
+        return null;
     }
 }
