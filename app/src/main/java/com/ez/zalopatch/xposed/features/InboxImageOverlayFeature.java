@@ -66,8 +66,9 @@ public final class InboxImageOverlayFeature extends Feature {
             return;
         }
 
-        List<XpHooks.Handle> installed = XpHooks.hookAllConstructors(
-                messagesViewClass, null, new XpHooks.After() {
+        List<XpHooks.Handle> installed = XpHooks.hookAllMethods(
+                "image_overlay", messagesViewClass, "onAttachedToWindow",
+                new XpHooks.After() {
                     @Override
                     public void after(XpHooks.HookParam param) {
                         if (!HookConfig.isEnabled(FEATURE)) return;
@@ -79,12 +80,12 @@ public final class InboxImageOverlayFeature extends Feature {
 
         if (installed.isEmpty()) {
             SelfCheckRegistry.markStale(FEATURE,
-                    MESSAGES_VIEW_CLASS + " constructor",
-                    "no constructors found");
+                    MESSAGES_VIEW_CLASS + "#onAttachedToWindow",
+                    "method not found");
             return;
         }
         SelfCheckRegistry.markInstalled(FEATURE,
-                MESSAGES_VIEW_CLASS + " constructor", installed.size());
+                MESSAGES_VIEW_CLASS + "#onAttachedToWindow", installed.size());
     }
 
     private void injectOverlay(ViewGroup parent) {
